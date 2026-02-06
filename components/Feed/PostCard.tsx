@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
-import { Post, User } from '../../types';
-import { users } from '../../data/mockData';
+// Bỏ import Post, User từ types cũ để tránh lỗi type checker báo đỏ khi prop không khớp
+// import { Post, User } from '../../types'; 
+// Bỏ import users mock data vì ta lấy thông tin user trực tiếp từ props
+// import { users } from '../../data/mockData';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface PostCardProps {
-  post: Post;
+// Định nghĩa lại Interface cho khớp với dữ liệu đã map ở Home.tsx
+interface PostProps {
+  post: {
+    id: string;
+    username: string;
+    userAvatar: string;
+    image: string | null; // API có thể trả về null
+    content: string;
+    timestamp: string;
+    likes: number;
+    comments: number | any[]; // Chấp nhận cả số hoặc mảng
+    location?: string;
+  };
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const user = users[post.userId];
+const PostCard: React.FC<PostProps> = ({ post }) => {
+  // --- XOÁ DÒNG NÀY ---
+  // const user = users[post.userId]; 
+  // Vì Home.tsx đã gửi kèm thông tin username/avatar vào trong object post rồi.
+  
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showHeartOverlay, setShowHeartOverlay] = useState(false);
@@ -24,7 +40,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     setTimeout(() => setShowHeartOverlay(false), 800);
   };
 
-  if (!user) return null;
+  // --- XOÁ DÒNG CHECK USER ---
+  // if (!user) return null; 
 
   return (
     <article className="bg-white md:rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
@@ -32,12 +49,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-purple-600 p-[2px]">
-             <img src={user.avatar} alt={user.username} className="w-full h-full rounded-full border-2 border-white object-cover" />
+             {/* SỬA: post.userAvatar thay vì user.avatar */}
+             <img src={post.userAvatar} alt={post.username} className="w-full h-full rounded-full border-2 border-white object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-                <span className="font-bold text-sm">{user.username}</span>
-                <span className="text-gray-400 text-xs">• {post.timestamp}</span>
+                {/* SỬA: post.username thay vì user.username */}
+                <span className="font-bold text-sm">{post.username}</span>
+                <span className="text-gray-400 text-xs">• {new Date(post.timestamp).toLocaleDateString('vi-VN')}</span>
             </div>
             {post.location && <p className="text-xs text-gray-500">{post.location}</p>}
           </div>
@@ -48,27 +67,34 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       </div>
 
       {/* Image / Media */}
-      <div 
-        className="relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer"
-        onDoubleClick={handleDoubleTap}
-      >
-        <img src={post.imageUrl} alt="Post Content" className="w-full h-full object-cover" />
-        
-        {/* Double Tap Heart Animation */}
-        <AnimatePresence>
-            {showHeartOverlay && (
-                <motion.div 
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1.2, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                >
-                    <Heart size={100} className="text-white fill-white drop-shadow-lg" />
-                </motion.div>
-            )}
-        </AnimatePresence>
-      </div>
+      {/* Thêm check: Chỉ hiện khung ảnh nếu post.image có dữ liệu */}
+      {post.image ? (
+        <div 
+            className="relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer"
+            onDoubleClick={handleDoubleTap}
+        >
+            {/* SỬA: post.image thay vì post.imageUrl */}
+            <img src={post.image} alt="Post Content" className="w-full h-full object-cover" />
+            
+            {/* Double Tap Heart Animation */}
+            <AnimatePresence>
+                {showHeartOverlay && (
+                    <motion.div 
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1.2, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                        <Heart size={100} className="text-white fill-white drop-shadow-lg" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+      ) : (
+          // Nếu không có ảnh thì có thể ẩn hoặc hiện placeholder
+          <div className="w-full h-1 bg-gray-50"></div>
+      )}
 
       {/* Actions */}
       <div className="p-4 pb-2">
@@ -89,7 +115,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                     <MessageCircle size={28} className="text-gray-800" strokeWidth={2} />
                 </button>
                 <button className="hover:opacity-60 transition">
-                    <Send size={28} className="text-gray-800 -rotate-45 mb-1" strokeWidth={2} />
+                    <Send size={28} className="text-gray-800" strokeWidth={2} />
                 </button>
             </div>
             <motion.button 
@@ -111,16 +137,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
         {/* Caption */}
         <div className="mb-2">
-            <span className="font-bold text-sm mr-2">{user.username}</span>
-            <span className="text-sm text-gray-800">{post.caption}</span>
+            {/* SỬA: post.username và post.content */}
+            <span className="font-bold text-sm mr-2">{post.username}</span>
+            <span className="text-sm text-gray-800">{post.content}</span>
         </div>
 
         {/* Comments Preview */}
-        {post.comments.length > 0 && (
-            <div className="text-gray-500 text-sm mb-2 cursor-pointer hover:text-gray-800">
-                Xem tất cả {post.comments.length + 15} bình luận
-            </div>
-        )}
+        {/* Logic hiển thị comment: Xử lý an toàn hơn vì comments có thể là số 0 */}
+        <div className="text-gray-500 text-sm mb-2 cursor-pointer hover:text-gray-800">
+            Xem tất cả {Array.isArray(post.comments) ? post.comments.length : post.comments} bình luận
+        </div>
         
         {/* Add Comment Input */}
         <div className="flex items-center gap-2 mt-2">
