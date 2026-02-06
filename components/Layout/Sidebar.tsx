@@ -1,11 +1,26 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Search, PlusSquare, Heart, UserCircle, MessageCircle, Menu, Compass } from 'lucide-react';
+import { Home, Search, PlusSquare, Heart, MessageCircle, Menu, Compass, Settings, Activity, Bookmark, Moon, AlertTriangle, LogOut, Repeat } from 'lucide-react';
 import { currentUser } from '../../data/mockData';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuRef]);
 
   const navItems = [
     { icon: Home, label: 'Trang chủ', path: '/' },
@@ -14,6 +29,16 @@ const Sidebar: React.FC = () => {
     { icon: MessageCircle, label: 'Tin nhắn', path: '/messages' },
     { icon: Heart, label: 'Thông báo', path: '/notifications', desktopOnly: true },
     { icon: PlusSquare, label: 'Tạo mới', path: '/create' },
+  ];
+
+  const moreMenuItems = [
+    { icon: Settings, label: 'Cài đặt' },
+    { icon: Activity, label: 'Hoạt động của bạn' },
+    { icon: Bookmark, label: 'Đã lưu' },
+    { icon: Moon, label: 'Chuyển chế độ' },
+    { icon: AlertTriangle, label: 'Báo cáo sự cố' },
+    { icon: Repeat, label: 'Chuyển tài khoản', separator: true },
+    { icon: LogOut, label: 'Đăng xuất' },
   ];
 
   const DesktopLogo = () => (
@@ -73,10 +98,37 @@ const Sidebar: React.FC = () => {
           </NavLink>
         </nav>
 
-        <div className="mt-auto px-4">
-          <button className="flex items-center gap-4 text-gray-500 hover:text-gray-900 py-3 w-full">
-            <Menu size={24} />
-            <span>Xem thêm</span>
+        <div className="mt-auto relative" ref={menuRef}>
+          <AnimatePresence>
+            {isMenuOpen && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute bottom-16 left-0 w-[260px] bg-white rounded-2xl shadow-[0_4px_40px_rgba(0,0,0,0.1)] border border-gray-100 p-2 overflow-hidden z-50"
+                >
+                    {moreMenuItems.map((item, index) => (
+                        <React.Fragment key={index}>
+                        {item.separator && <div className="h-[4px] bg-gray-50 my-1 mx-0" />}
+                        <button className="flex items-center gap-3 w-full p-3.5 text-left hover:bg-gray-50 rounded-lg transition-colors group">
+                            <item.icon size={20} className="text-gray-500 group-hover:text-gray-900" />
+                            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{item.label}</span>
+                        </button>
+                        </React.Fragment>
+                    ))}
+                </motion.div>
+            )}
+          </AnimatePresence>
+          
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`flex items-center gap-4 py-3 px-4 w-full rounded-xl transition-all duration-200 ${
+                isMenuOpen ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <Menu size={24} className={isMenuOpen ? 'text-gray-900' : ''} strokeWidth={isMenuOpen ? 2.5 : 2} />
+            <span className={isMenuOpen ? 'font-bold' : 'text-base'}>Xem thêm</span>
           </button>
         </div>
       </aside>
